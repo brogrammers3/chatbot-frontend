@@ -64,7 +64,7 @@ export default function RegisterPage() {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div className="space-y-1">
               <Label htmlFor="fullName">Nombre completo</Label>
               <Input id="fullName" placeholder="Juan Pérez" {...register('fullName')} />
