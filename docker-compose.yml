@@ -1,0 +1,27 @@
+name: chatbot-frontend
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    # No usamos `env_file`: las variables de Supabase viven en `.env` y Next las
+    # lee del código montado (ver volumes). Así, al editar `.env`, el dev server
+    # recarga las variables en caliente sin recrear el contenedor.
+    environment:
+      - NEXT_TELEMETRY_DISABLED=1
+      # Descomenta si el hot-reload NO detecta cambios (macOS/Windows): fuerza
+      # al watcher a hacer polling en vez de depender de eventos del filesystem.
+      # Nota: aplica al bundler Webpack; si usas Turbopack (default) y el HMR
+      # falla, arranca con `next dev --webpack` además de estas variables.
+      # - WATCHPACK_POLLING=true
+      # - CHOKIDAR_USEPOLLING=true
+    volumes:
+      # Monta el código del host para hot-reload...
+      - .:/app
+      # ...pero conserva el node_modules y .next del contenedor (Linux),
+      # para que el bind-mount del host (macOS) no los pise.
+      - /app/node_modules
+      - /app/.next

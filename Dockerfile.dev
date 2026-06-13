@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1
+
+# Imagen de DESARROLLO con hot-reload para Next.js 16 (App Router).
+# Node 22 LTS sobre Debian slim (glibc): más estable que alpine/musl para los
+# binarios nativos de Turbopack/SWC. Next exige Node >= 20.9.
+FROM node:22-bookworm-slim
+
+WORKDIR /app
+
+ENV NODE_ENV=development \
+    NEXT_TELEMETRY_DISABLED=1
+
+# Instala dependencias en una capa propia para aprovechar la cache de Docker:
+# solo se invalida cuando cambian los manifiestos, no en cada cambio de código.
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copia el resto como respaldo. En runtime, el bind-mount del compose
+# sobreescribe /app con el código del host (esto habilita el hot-reload).
+COPY . .
+
+EXPOSE 3000
+
+# `next dev` (Turbopack) ya escucha en 0.0.0.0:3000 por defecto en Next 16.
+CMD ["npm", "run", "dev"]
