@@ -27,6 +27,7 @@ type FormData = z.infer<typeof schema>
 export default function RegisterPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [confirmSent, setConfirmSent] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
@@ -38,7 +39,7 @@ export default function RegisterPage() {
     setError(null)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data: result, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
@@ -52,7 +53,36 @@ export default function RegisterPage() {
       return
     }
 
+    // Si el proyecto exige confirmación de email, signUp no crea sesión:
+    // mostramos "revisa tu correo" en vez de ir al dashboard (donde el
+    // middleware rebotaría al login por no haber sesión).
+    if (!result?.session) {
+      setConfirmSent(true)
+      setLoading(false)
+      return
+    }
+
     router.push('/dashboard')
+  }
+
+  if (confirmSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">Confirma tu correo</CardTitle>
+            <CardDescription>
+              Te enviamos un enlace de verificación. Ábrelo para activar tu cuenta y luego inicia sesión.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center">
+            <Link href="/login" className="text-sm text-blue-600 hover:underline">
+              Volver al inicio de sesión
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    )
   }
 
   return (

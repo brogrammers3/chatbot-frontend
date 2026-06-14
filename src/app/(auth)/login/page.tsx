@@ -22,15 +22,19 @@ type FormData = z.infer<typeof schema>
 export default function LoginPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [needsConfirm, setNeedsConfirm] = useState(false)
+  const [resent, setResent] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
   async function onSubmit(data: FormData) {
     setLoading(true)
     setError(null)
+    setNeedsConfirm(false)
+    setResent(false)
 
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({
@@ -39,12 +43,30 @@ export default function LoginPage() {
     })
 
     if (error) {
-      setError('Correo o contraseña incorrectos')
+      if (error.code === 'email_not_confirmed') {
+        setError('Tu correo aún no está confirmado. Revisa tu bandeja de entrada y haz clic en el enlace de verificación.')
+        setNeedsConfirm(true)
+      } else if (error.code === 'invalid_credentials' || !error.code) {
+        setError('Correo o contraseña incorrectos')
+      } else {
+        setError(error.message || 'No se pudo iniciar sesión. Inténtalo de nuevo.')
+      }
       setLoading(false)
       return
     }
 
     router.push('/dashboard')
+  }
+
+  async function resendConfirmation() {
+    const email = getValues('email')
+    if (!email) return
+    const supabase = createClient()
+    const { error } = await supabase.auth.resend({ type: 'signup', email })
+    if (!error) {
+      setResent(true)
+      setNeedsConfirm(false)
+    }
   }
 
   return (
@@ -75,6 +97,20 @@ export default function LoginPage() {
             </div>
 
             {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+            {needsConfirm && (
+              <button
+                type="button"
+                onClick={resendConfirmation}
+                className="mx-auto block text-sm text-blue-600 hover:underline"
+              >
+                Reenviar correo de confirmación
+              </button>
+            )}
+            {resent && (
+              <p className="text-sm text-green-600 text-center">
+                Te reenviamos el correo de confirmación.
+              </p>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
