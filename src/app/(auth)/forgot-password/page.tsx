@@ -5,11 +5,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
+import { Mail, CircleAlert, ArrowLeft, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { AuthShell, type AsideContent } from '@/components/auth/auth-shell'
 
 const schema = z.object({
   email: z.string().email('Ingresa un email válido'),
@@ -17,72 +15,120 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
+const aside: AsideContent = {
+  headline: 'Recupera el acceso en segundos.',
+  sub: 'Tu cuenta y los datos de tu empresa siguen protegidos con aislamiento seguro por tenant.',
+  trust: ['Aislamiento seguro por empresa', 'Enlaces con caducidad'],
+}
+
 export default function ForgotPasswordPage() {
-  const [sent, setSent] = useState(false)
+  const [sentEmail, setSentEmail] = useState<string | null>(null)
+  const [resent, setResent] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  })
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({ resolver: zodResolver(schema) })
+
+  async function sendLink(email: string) {
+    const supabase = createClient()
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+  }
 
   async function onSubmit(data: FormData) {
     setLoading(true)
-    const supabase = createClient()
-    await supabase.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    })
-    setSent(true)
+    await sendLink(data.email)
+    setSentEmail(data.email)
     setLoading(false)
   }
 
-  if (sent) {
+  async function onResend() {
+    if (!sentEmail) return
+    await sendLink(sentEmail)
+    setResent(true)
+  }
+
+  if (sentEmail) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Revisa tu correo</CardTitle>
-            <CardDescription>
-              Te enviamos un enlace para restablecer tu contraseña.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="justify-center">
-            <Link href="/login" className="text-sm text-blue-600 hover:underline">
-              Volver al inicio de sesión
+      <AuthShell aside={aside}>
+        <div className="auth__success">
+          <div className="auth__success-icon" aria-hidden="true">
+            <Mail />
+          </div>
+          <h1>Revisa tu correo</h1>
+          <p>
+            Te enviamos un enlace para restablecer tu contraseña a{' '}
+            <span className="sent-to">{sentEmail}</span>.
+          </p>
+
+          <div className="auth__success-note">
+            <Info />
+            <span>
+              El enlace caduca en 30 minutos. Si no lo ves, revisa tu carpeta de spam o correo no
+              deseado.
+            </span>
+          </div>
+
+          <p className="auth__resend-row">
+            ¿No recibiste el correo?{' '}
+            <button type="button" onClick={onResend} disabled={resent}>
+              {resent ? 'Enlace reenviado' : 'Reenviar enlace'}
+            </button>
+          </p>
+
+          <p className="auth__alt auth__alt--back">
+            <Link href="/login">
+              <ArrowLeft /> Volver al inicio de sesión
             </Link>
-          </CardFooter>
-        </Card>
-      </div>
+          </p>
+        </div>
+      </AuthShell>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Recuperar contraseña</CardTitle>
-          <CardDescription>Te enviaremos un enlace a tu correo</CardDescription>
-        </CardHeader>
+    <AuthShell aside={aside}>
+      <div className="auth__head">
+        <h1>Recuperar contraseña</h1>
+        <p>Introduce tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
+      </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-            <div className="space-y-1">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" placeholder="tu@empresa.com" {...register('email')} />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-            </div>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <div className={`field${errors.email ? ' is-invalid' : ''}`}>
+          <label htmlFor="email">Correo electrónico</label>
+          <div className="input-wrap">
+            <Mail className="lead" />
+            <input
+              className="input"
+              id="email"
+              type="email"
+              placeholder="tu@empresa.com"
+              autoComplete="email"
+              aria-invalid={errors.email ? 'true' : undefined}
+              {...register('email')}
+            />
+          </div>
+          {errors.email && (
+            <span className="field__error">
+              <CircleAlert /> {errors.email.message}
+            </span>
+          )}
+        </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Enviando...' : 'Enviar enlace'}
-            </Button>
-          </form>
-        </CardContent>
+        <button type="submit" className="btn btn--primary btn--lg auth__submit" disabled={loading}>
+          {loading ? 'Enviando…' : 'Enviar enlace'}
+        </button>
 
-        <CardFooter className="justify-center">
-          <Link href="/login" className="text-sm text-blue-600 hover:underline">
-            Volver al inicio de sesión
+        <p className="auth__alt auth__alt--back">
+          <Link href="/login">
+            <ArrowLeft /> Volver al inicio de sesión
           </Link>
-        </CardFooter>
-      </Card>
-    </div>
+        </p>
+      </form>
+    </AuthShell>
   )
 }

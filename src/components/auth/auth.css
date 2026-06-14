@@ -36,6 +36,7 @@
   --primary: var(--blue-600);
   --primary-hover: var(--blue-700);
   --grad: linear-gradient(135deg, var(--blue-600) 0%, var(--indigo-600) 100%);
+  --grad-soft: linear-gradient(135deg, #eef4ff 0%, #eef0ff 100%);
 
   /* Radii */
   --r-sm: 8px;
@@ -222,6 +223,34 @@
 .ss-auth .auth__alt { margin-top: 26px; text-align: center; font-size: 14.5px; color: var(--slate-600); }
 .ss-auth .auth__alt a { color: var(--primary); font-weight: 600; }
 .ss-auth .auth__alt a:hover { text-decoration: underline; }
+.ss-auth .auth__alt--back a { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.ss-auth .auth__alt--back a > svg { width: 16px; height: 16px; }
+
+/* ---------- Estados de éxito (enlace enviado / contraseña actualizada) ---------- */
+.ss-auth .auth__success { text-align: center; }
+.ss-auth .auth__success-icon {
+  width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 22px;
+  display: grid; place-items: center; position: relative;
+  background: var(--grad-soft); border: 1px solid var(--blue-100);
+}
+.ss-auth .auth__success-icon svg { width: 30px; height: 30px; color: var(--primary); }
+.ss-auth .auth__success-icon::after {
+  content: ""; position: absolute; inset: -7px; border-radius: 50%;
+  border: 1.5px dashed var(--blue-100);
+}
+.ss-auth .auth__success h1 { font-size: clamp(24px, 3.6vw, 30px); letter-spacing: -0.02em; }
+.ss-auth .auth__success p { margin-top: 10px; color: var(--fg-muted); font-size: 15.5px; text-wrap: pretty; }
+.ss-auth .auth__success .sent-to { color: var(--slate-900); font-weight: 600; }
+.ss-auth .auth__success-note {
+  margin-top: 22px; padding: 14px 16px; border-radius: var(--r-md);
+  background: var(--gray-50); border: 1px solid var(--border);
+  font-size: 13.5px; color: var(--slate-600); line-height: 1.55; text-align: left;
+  display: flex; gap: 11px;
+}
+.ss-auth .auth__success-note svg { width: 18px; height: 18px; color: var(--slate-400); flex: none; margin-top: 1px; }
+.ss-auth .auth__resend-row { margin-top: 20px; font-size: 14px; color: var(--slate-500); }
+.ss-auth .auth__resend-row button { color: var(--primary); font-weight: 600; font-size: 14px; text-decoration: underline; text-underline-offset: 2px; }
+.ss-auth .auth__resend-row button:disabled { color: var(--slate-400); text-decoration: none; cursor: default; }
 
 /* ---------- Pantalla de confirmación de correo ---------- */
 .ss-auth .auth__notice { text-align: center; }

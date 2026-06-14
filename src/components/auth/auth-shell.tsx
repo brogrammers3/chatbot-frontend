@@ -8,7 +8,7 @@ type ChatMsg = { who: 'user' | 'bot'; text: ReactNode; cite?: string }
 export type AsideContent = {
   headline: string
   sub: string
-  chat: ChatMsg[]
+  chat?: ChatMsg[]
   trust: string[]
 }
 
@@ -61,21 +61,23 @@ export function AuthShell({ aside, children }: { aside: AsideContent; children: 
             <h2 className="aside__headline">{aside.headline}</h2>
             <p className="aside__sub">{aside.sub}</p>
 
-            <div className="aside__chat">
-              {aside.chat.map((m, i) => (
-                <div key={i} className={`a-msg a-msg--${m.who}`}>
-                  <span className="a-ava">{m.who === 'bot' ? 'AI' : 'Tú'}</span>
-                  <div className="a-bubble">
-                    {m.text}
-                    {m.cite && (
-                      <span className="a-cite">
-                        <File /> {m.cite}
-                      </span>
-                    )}
+            {aside.chat && aside.chat.length > 0 && (
+              <div className="aside__chat">
+                {aside.chat.map((m, i) => (
+                  <div key={i} className={`a-msg a-msg--${m.who}`}>
+                    <span className="a-ava">{m.who === 'bot' ? 'AI' : 'Tú'}</span>
+                    <div className="a-bubble">
+                      {m.text}
+                      {m.cite && (
+                        <span className="a-cite">
+                          <File /> {m.cite}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="aside__bottom">
