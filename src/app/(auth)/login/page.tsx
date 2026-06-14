@@ -6,11 +6,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Mail, Lock, Eye, EyeOff, Check, CircleAlert } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { AuthShell, type AsideContent } from '@/components/auth/auth-shell'
 
 const schema = z.object({
   email: z.string().email('Ingresa un email válido'),
@@ -19,16 +17,38 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
+const aside: AsideContent = {
+  headline: 'Tu asistente con IA, entrenado con los documentos de tu empresa.',
+  sub: 'Respuestas precisas basadas en tus PDFs y manuales. Gestiónalo todo desde un solo panel.',
+  chat: [
+    { who: 'user', text: '¿Cuántos días de vacaciones tiene un empleado nuevo?' },
+    {
+      who: 'bot',
+      text: (
+        <>
+          Un empleado nuevo acumula <strong>15 días hábiles</strong> durante su primer año.
+        </>
+      ),
+      cite: 'Manual_RRHH.pdf · pág. 12',
+    },
+  ],
+  trust: ['Aislamiento seguro por empresa', 'Listo en minutos'],
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [needsConfirm, setNeedsConfirm] = useState(false)
   const [resent, setResent] = useState(false)
+  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, getValues, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  })
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    formState: { errors },
+  } = useForm<FormData>({ resolver: zodResolver(schema) })
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -70,63 +90,98 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Iniciar sesión</CardTitle>
-          <CardDescription>Accede a tu panel de chatbots</CardDescription>
-        </CardHeader>
+    <AuthShell aside={aside}>
+      <div className="auth__head">
+        <h1>Iniciar sesión</h1>
+        <p>Accede a tu panel para gestionar tus chatbots.</p>
+      </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-            <div className="space-y-1">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" placeholder="tu@empresa.com" {...register('email')} />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-            </div>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <div className={`field${errors.email ? ' is-invalid' : ''}`}>
+          <label htmlFor="email">Correo electrónico</label>
+          <div className="input-wrap">
+            <Mail className="lead" />
+            <input
+              className="input"
+              id="email"
+              type="email"
+              placeholder="tu@empresa.com"
+              autoComplete="email"
+              aria-invalid={errors.email ? 'true' : undefined}
+              {...register('email')}
+            />
+          </div>
+          {errors.email && (
+            <span className="field__error">
+              <CircleAlert /> {errors.email.message}
+            </span>
+          )}
+        </div>
 
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Contraseña</Label>
-                <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
-              <Input id="password" type="password" placeholder="Tu contraseña" {...register('password')} />
-              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
-            </div>
-
-            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-            {needsConfirm && (
-              <button
-                type="button"
-                onClick={resendConfirmation}
-                className="mx-auto block text-sm text-blue-600 hover:underline"
-              >
-                Reenviar correo de confirmación
-              </button>
-            )}
-            {resent && (
-              <p className="text-sm text-green-600 text-center">
-                Te reenviamos el correo de confirmación.
-              </p>
-            )}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-            </Button>
-          </form>
-        </CardContent>
-
-        <CardFooter className="justify-center">
-          <p className="text-sm text-gray-600">
-            ¿No tienes cuenta?{' '}
-            <Link href="/register" className="font-medium text-blue-600 hover:underline">
-              Regístrate gratis
+        <div className={`field${errors.password ? ' is-invalid' : ''}`}>
+          <div className="field__label-row">
+            <label htmlFor="password">Contraseña</label>
+            <Link href="/forgot-password" className="field__hint-link">
+              ¿Olvidaste tu contraseña?
             </Link>
-          </p>
-        </CardFooter>
-      </Card>
-    </div>
+          </div>
+          <div className="input-wrap">
+            <Lock className="lead" />
+            <input
+              className="input has-toggle"
+              id="password"
+              type={showPw ? 'text' : 'password'}
+              placeholder="Tu contraseña"
+              autoComplete="current-password"
+              aria-invalid={errors.password ? 'true' : undefined}
+              {...register('password')}
+            />
+            <button
+              type="button"
+              className="toggle-pw"
+              aria-label={showPw ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              aria-pressed={showPw}
+              onClick={() => setShowPw((v) => !v)}
+            >
+              <Eye className="icon-on" />
+              <EyeOff className="icon-off" />
+            </button>
+          </div>
+          {errors.password && (
+            <span className="field__error">
+              <CircleAlert /> {errors.password.message}
+            </span>
+          )}
+        </div>
+
+        <label className="check">
+          <input type="checkbox" id="remember" name="remember" />
+          <span className="check__box" aria-hidden="true">
+            <Check />
+          </span>
+          <span className="check__text">Mantener sesión iniciada en este dispositivo</span>
+        </label>
+
+        {error && (
+          <div className="auth__error">
+            <CircleAlert /> {error}
+          </div>
+        )}
+        {needsConfirm && (
+          <button type="button" className="auth__resend" onClick={resendConfirmation}>
+            Reenviar correo de confirmación
+          </button>
+        )}
+        {resent && <p className="auth__ok">Te reenviamos el correo de confirmación.</p>}
+
+        <button type="submit" className="btn btn--primary btn--lg auth__submit" disabled={loading}>
+          {loading ? 'Iniciando sesión…' : 'Iniciar sesión'}
+        </button>
+
+        <p className="auth__alt">
+          ¿No tienes cuenta? <Link href="/register">Regístrate gratis</Link>
+        </p>
+      </form>
+    </AuthShell>
   )
 }
