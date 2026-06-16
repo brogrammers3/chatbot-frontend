@@ -1,8 +1,6 @@
 import Link from 'next/link'
-import { Bot, MessagesSquare, FileText, Users, Plus, Activity } from 'lucide-react'
+import { Link as LinkIcon, Plus, Bot, MessagesSquare, FileText, Users, Activity } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { buttonVariants } from '@/components/ui/button'
-import { PageHeader, PendingNote, StatCard, EmptyState } from '@/components/dashboard/ui'
 
 export default async function DashboardOverviewPage() {
   const supabase = await createClient()
@@ -14,43 +12,77 @@ export default async function DashboardOverviewPage() {
 
   return (
     <>
-      <PageHeader
-        title={`Hola, ${firstName}`}
-        description="Este es el resumen de tu cuenta en SmartSupport."
-        action={
-          <Link href="/dashboard/chatbots/new" className={buttonVariants()}>
-            <Plus /> Nuevo chatbot
-          </Link>
-        }
-      />
+      <header className="page-head">
+        <div>
+          <h1>Hola, {firstName}</h1>
+          <p>Este es el resumen de tu cuenta en SmartSupport.</p>
+        </div>
+        <Link href="/dashboard/chatbots/new" className="btn btn--dark btn--lg">
+          <Plus />
+          Nuevo chatbot
+        </Link>
+      </header>
 
-      <PendingNote>
-        Vista preliminar con datos de ejemplo. Las métricas reales aparecerán al conectar el backend
-        (Supabase + FastAPI).
-      </PendingNote>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={<Bot />} value="0" label="Chatbots" hint="Chatbots creados" />
-        <StatCard icon={<MessagesSquare />} value="0" label="Conversaciones" hint="Conversaciones (30 días)" />
-        <StatCard icon={<FileText />} value="0" label="Documentos" hint="Documentos indexados" />
-        <StatCard icon={<Users />} value="1" label="Miembros" hint="Miembros del equipo" />
+      <div className="notice">
+        <LinkIcon />
+        <span>
+          <b>Vista preliminar con datos de ejemplo.</b> Las métricas reales aparecerán al conectar el
+          backend (Supabase + FastAPI).
+        </span>
       </div>
 
-      <section className="mt-8">
-        <h2 className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Actividad reciente
-        </h2>
-        <EmptyState
-          icon={<Activity />}
-          title="Sin actividad todavía"
-          description="Cuando crees chatbots y tus usuarios conversen con ellos, lo verás aquí."
-          action={
-            <Link href="/dashboard/chatbots/new" className={buttonVariants({ variant: 'outline' })}>
-              <Plus /> Crear tu primer chatbot
-            </Link>
-          }
-        />
+      <section className="stats" aria-label="Resumen de métricas">
+        <div className="stat">
+          <span className="stat__icon" aria-hidden="true">
+            <Bot />
+          </span>
+          <div>
+            <div className="stat__num">0</div>
+            <div className="stat__label">Chatbots creados</div>
+          </div>
+        </div>
+        <div className="stat">
+          <span className="stat__icon" aria-hidden="true">
+            <MessagesSquare />
+          </span>
+          <div>
+            <div className="stat__num">0</div>
+            <div className="stat__label">Conversaciones (30 días)</div>
+          </div>
+        </div>
+        <div className="stat">
+          <span className="stat__icon" aria-hidden="true">
+            <FileText />
+          </span>
+          <div>
+            <div className="stat__num">0</div>
+            <div className="stat__label">Documentos indexados</div>
+          </div>
+        </div>
+        <div className="stat">
+          <span className="stat__icon" aria-hidden="true">
+            <Users />
+          </span>
+          <div>
+            <div className="stat__num">1</div>
+            <div className="stat__label">Miembros del equipo</div>
+          </div>
+        </div>
       </section>
+
+      <h2 className="section-label">Actividad reciente</h2>
+
+      <div className="empty">
+        <span className="empty__icon" aria-hidden="true">
+          <Activity />
+        </span>
+        <h2>Sin actividad todavía</h2>
+        <p>Cuando crees chatbots y tus usuarios conversen con ellos, lo verás aquí.</p>
+        <Link href="/dashboard/chatbots/new" className="btn btn--outline btn--lg">
+          <Plus />
+          Crear tu primer chatbot
+        </Link>
+      </div>
     </>
   )
 }
