@@ -1,7 +1,5 @@
-import { UserPlus } from 'lucide-react'
+import { Link as LinkIcon, UserPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { Button } from '@/components/ui/button'
-import { PageHeader, PendingNote, Badge } from '@/components/dashboard/ui'
 
 export default async function TeamPage() {
   const supabase = await createClient()
@@ -12,62 +10,51 @@ export default async function TeamPage() {
   const myEmail = user?.email ?? ''
 
   const members = [
-    { name: myName, email: myEmail, role: 'Propietario', tone: 'info' as const, you: true },
-    { name: 'María González', email: 'maria@empresa.com', role: 'Administrador', tone: 'neutral' as const, you: false },
-    { name: 'Carlos Ruiz', email: 'carlos@empresa.com', role: 'Miembro', tone: 'neutral' as const, you: false },
+    { name: myName, email: myEmail, role: 'Propietario', status: 'live' as const, you: true },
+    { name: 'María González', email: 'maria@empresa.com', role: 'Administrador', status: 'open' as const, you: false },
+    { name: 'Carlos Ruiz', email: 'carlos@empresa.com', role: 'Miembro', status: 'draft' as const, you: false },
   ]
 
   return (
     <>
-      <PageHeader
-        title="Equipo"
-        description="Gestiona quién tiene acceso a tu empresa en SmartSupport."
-        action={
-          <Button disabled title="Se habilitará al conectar el backend">
-            <UserPlus /> Invitar miembro
-          </Button>
-        }
-      />
+      <header className="page-head">
+        <div>
+          <h1>Equipo</h1>
+          <p>Gestiona quién tiene acceso a tu empresa en SmartSupport.</p>
+        </div>
+        <button type="button" className="btn btn--dark btn--lg" disabled title="Se habilitará al conectar el backend">
+          <UserPlus />
+          Invitar miembro
+        </button>
+      </header>
 
-      <PendingNote>
-        Datos de ejemplo (excepto tu usuario). Los miembros se leerán de <code>users</code> filtrados
-        por <code>company_id</code>.
-      </PendingNote>
-
-      <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-left text-xs text-muted-foreground uppercase">
-            <tr>
-              <th className="px-4 py-3 font-medium">Miembro</th>
-              <th className="hidden px-4 py-3 font-medium sm:table-cell">Email</th>
-              <th className="px-4 py-3 font-medium">Rol</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {members.map((m, i) => (
-              <tr key={i} className="hover:bg-muted/30">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground uppercase">
-                      {(m.name || '??').slice(0, 2)}
-                    </div>
-                    <div>
-                      <div className="font-medium">
-                        {m.name} {m.you && <span className="text-xs text-muted-foreground">(tú)</span>}
-                      </div>
-                      <div className="text-xs text-muted-foreground sm:hidden">{m.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">{m.email}</td>
-                <td className="px-4 py-3">
-                  <Badge tone={m.tone}>{m.role}</Badge>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="notice">
+        <LinkIcon />
+        <span>
+          <b>Datos de ejemplo</b> (excepto tu usuario). Los miembros se leerán de <code>users</code>{' '}
+          filtrados por <code>company_id</code>.
+        </span>
       </div>
+
+      <section className="member-list" aria-label="Miembros del equipo">
+        {members.map((m, i) => (
+          <div className="member" key={i}>
+            <span className="conv__ava" aria-hidden="true">
+              {(m.name || '??').slice(0, 2).toUpperCase()}
+            </span>
+            <span className="member__meta">
+              <span className="n">
+                {m.name} {m.you && <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(tú)</span>}
+              </span>
+              <span className="c">{m.email}</span>
+            </span>
+            <span className={`badge badge--${m.status}`}>
+              <span className="dot" />
+              {m.role}
+            </span>
+          </div>
+        ))}
+      </section>
     </>
   )
 }

@@ -405,6 +405,63 @@
 .ss-dash .plan-row__desc { margin-top: 6px; font-size: 14px; color: var(--fg-muted); }
 .ss-dash .panel__foot { margin-top: 18px; font-size: 13px; color: var(--slate-400); }
 
+/* ---------- Lista de miembros (Equipo) ---------- */
+.ss-dash .member-list {
+  background: #fff; border: 1px solid var(--border); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs); overflow: hidden;
+}
+.ss-dash .member { display: flex; align-items: center; gap: 14px; padding: 16px 22px; border-top: 1px solid var(--border); }
+.ss-dash .member:first-child { border-top: none; }
+.ss-dash .member__meta { flex: 1; min-width: 0; line-height: 1.35; }
+.ss-dash .member__meta .n { display: block; font-size: 14.5px; font-weight: 600; color: var(--slate-900); }
+.ss-dash .member__meta .c { display: block; font-size: 12.5px; color: var(--slate-500); }
+
+/* ---------- Formulario en una columna (nuevo chatbot) ---------- */
+.ss-dash .ff textarea.ff__input { resize: vertical; min-height: 64px; line-height: 1.5; }
+.ss-dash .back-link {
+  display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px;
+  font-size: 14px; font-weight: 500; color: var(--slate-500);
+}
+.ss-dash .back-link svg { width: 16px; height: 16px; }
+.ss-dash .back-link:hover { color: var(--slate-800); }
+.ss-dash .form-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* ---------- Detalle de chatbot: tabs ---------- */
+.ss-dash .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; overflow-x: auto; }
+.ss-dash .tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 14px; font-size: 14.5px; font-weight: 500; color: var(--slate-500);
+  border-bottom: 2px solid transparent; white-space: nowrap;
+  transition: color .15s ease, border-color .15s ease;
+}
+.ss-dash .tab svg { width: 16px; height: 16px; }
+.ss-dash .tab:hover { color: var(--slate-900); }
+.ss-dash .tab.is-active { color: var(--primary); border-bottom-color: var(--primary); }
+
+/* dropzone + lista de documentos */
+.ss-dash .dropzone { border: 1px dashed var(--slate-300); border-radius: var(--r-lg); background: var(--gray-50); padding: 32px 24px; text-align: center; margin-bottom: 18px; }
+.ss-dash .dropzone svg { width: 26px; height: 26px; color: var(--slate-400); margin: 0 auto 10px; }
+.ss-dash .dropzone p { font-size: 14px; color: var(--slate-700); font-weight: 500; }
+.ss-dash .dropzone .hint { margin-top: 4px; font-size: 12.5px; color: var(--slate-400); font-weight: 400; }
+.ss-dash .doc-row { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-top: 1px solid var(--border); }
+.ss-dash .doc-row:first-child { border-top: none; }
+.ss-dash .doc-row__name { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--slate-800); }
+.ss-dash .doc-row__name svg { width: 18px; height: 18px; color: var(--slate-400); flex: none; }
+.ss-dash .doc-row__del { color: var(--slate-400); }
+.ss-dash .doc-row__del svg { width: 16px; height: 16px; }
+
+/* preview de chat (Probar) */
+.ss-dash .preview { background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px; display: grid; gap: 12px; margin-bottom: 14px; }
+.ss-dash .preview__msg { max-width: 80%; padding: 10px 14px; font-size: 14px; line-height: 1.5; border-radius: 14px; }
+.ss-dash .preview__msg--user { margin-left: auto; background: var(--primary); color: #fff; border-bottom-right-radius: 5px; }
+.ss-dash .preview__msg--bot { margin-right: auto; background: #fff; color: var(--slate-800); border: 1px solid var(--border); border-bottom-left-radius: 5px; }
+.ss-dash .preview__cite { font-size: 12px; color: var(--slate-500); }
+
+/* bloque de código (Embed) */
+.ss-dash .code { background: var(--slate-900); color: #e2e8f0; border-radius: var(--r-md); padding: 14px 16px; font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 12.5px; overflow-x: auto; }
+.ss-dash .field-row { display: flex; align-items: center; gap: 10px; }
+.ss-dash .field-row .ff__input { flex: 1; }
+
 @media (prefers-reduced-motion: reduce) {
   .ss-dash *, .ss-dash *::before, .ss-dash *::after { transition-duration: .001ms !important; }
 }

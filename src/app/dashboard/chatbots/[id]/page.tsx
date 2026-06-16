@@ -1,7 +1,5 @@
 import Link from 'next/link'
 import { ArrowLeft, Globe } from 'lucide-react'
-import { buttonVariants } from '@/components/ui/button'
-import { Badge } from '@/components/dashboard/ui'
 import { ChatbotTabs } from '@/components/dashboard/chatbot-tabs'
 
 export default async function ChatbotDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,22 +9,27 @@ export default async function ChatbotDetailPage({ params }: { params: Promise<{ 
 
   return (
     <>
-      <Link
-        href="/dashboard/chatbots"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" /> Volver a chatbots
+      <Link href="/dashboard/chatbots" className="back-link">
+        <ArrowLeft />
+        Volver a chatbots
       </Link>
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">{name}</h1>
-          <Badge tone="success">Publicado</Badge>
+      <header className="page-head">
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <h1>{name}</h1>
+            <span className="badge badge--live">
+              <span className="dot" />
+              Publicado
+            </span>
+          </div>
+          <p>Configura, prueba y publica tu asistente.</p>
         </div>
-        <a href="#" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          <Globe /> Ver chatbot público
+        <a href="#" className="btn btn--outline">
+          <Globe />
+          Ver chatbot público
         </a>
-      </div>
+      </header>
 
       <ChatbotTabs id={id} publicToken="pk_demo_3f9a2b7c" />
     </>
