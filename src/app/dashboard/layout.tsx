@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { DashboardShell } from '@/components/dashboard/shell'
+import { AppShell } from '@/components/dashboard/app-shell'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -13,8 +13,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect('/login')
 
   const name = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? 'Usuario'
+  const initials = name.trim().slice(0, 2).toUpperCase() || 'US'
 
   return (
-    <DashboardShell user={{ name, email: user.email ?? '' }}>{children}</DashboardShell>
+    <AppShell user={{ name, email: user.email ?? '', initials }}>{children}</AppShell>
   )
 }

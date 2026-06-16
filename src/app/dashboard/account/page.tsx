@@ -1,10 +1,6 @@
-import { KeyRound } from 'lucide-react'
+import Link from 'next/link'
+import { Link as LinkIcon, Key } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { PageHeader, PendingNote } from '@/components/dashboard/ui'
 
 export default async function AccountPage() {
   const supabase = await createClient()
@@ -16,53 +12,76 @@ export default async function AccountPage() {
 
   return (
     <>
-      <PageHeader title="Mi cuenta" description="Tu perfil personal y seguridad." />
+      <header className="page-head">
+        <div>
+          <h1>Mi cuenta</h1>
+          <p>Tu perfil personal y seguridad.</p>
+        </div>
+      </header>
 
-      <PendingNote>
-        El correo proviene de tu sesión real de Supabase. Guardar cambios se habilitará al conectar el
-        backend.
-      </PendingNote>
+      <div className="notice">
+        <LinkIcon />
+        <span>
+          El correo proviene de tu sesión real de Supabase. <b>Guardar cambios</b> se habilitará al
+          conectar el backend.
+        </span>
+      </div>
 
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Perfil</CardTitle>
-            <CardDescription>Tu información personal.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="grid max-w-md gap-5">
-              <div className="grid gap-1.5">
-                <Label htmlFor="name">Nombre completo</Label>
-                <Input id="name" defaultValue={fullName} placeholder="Tu nombre" />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="email">Correo electrónico</Label>
-                <Input id="email" type="email" defaultValue={email} readOnly className="bg-muted/40" />
-                <p className="text-xs text-muted-foreground">El correo no se puede cambiar por ahora.</p>
-              </div>
-              <div>
-                <Button type="button" disabled title="Se habilitará al conectar el backend">
-                  Guardar cambios
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <KeyRound className="size-4 text-muted-foreground" />
-              <CardTitle>Seguridad</CardTitle>
+      <div className="panels">
+        {/* Perfil */}
+        <section className="panel">
+          <div className="panel__head">
+            <div>
+              <h2>Perfil</h2>
+              <p>Tu información personal.</p>
             </div>
-            <CardDescription>Gestiona el acceso a tu cuenta.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" disabled title="Se habilitará al conectar el backend">
-              Cambiar contraseña
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+
+          <form>
+            <div className="ff">
+              <label htmlFor="fullName">Nombre completo</label>
+              <input
+                className="ff__input"
+                id="fullName"
+                type="text"
+                defaultValue={fullName}
+                placeholder="Tu nombre"
+              />
+            </div>
+
+            <div className="ff">
+              <label htmlFor="email">Correo electrónico</label>
+              <input className="ff__input" id="email" type="email" defaultValue={email} readOnly />
+              <span className="ff__hint">El correo no se puede cambiar por ahora.</span>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn--muted btn--lg"
+              disabled
+              title="Se habilitará al conectar el backend"
+            >
+              Guardar cambios
+            </button>
+          </form>
+        </section>
+
+        {/* Seguridad */}
+        <section className="panel">
+          <div className="panel__head">
+            <span className="panel__icon" aria-hidden="true">
+              <Key />
+            </span>
+            <div>
+              <h2>Seguridad</h2>
+              <p>Gestiona el acceso a tu cuenta.</p>
+            </div>
+          </div>
+
+          <Link href="/reset-password" className="btn btn--outline">
+            Cambiar contraseña
+          </Link>
+        </section>
       </div>
     </>
   )
