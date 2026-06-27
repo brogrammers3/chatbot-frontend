@@ -23,25 +23,13 @@ export default function NewChatbotPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      let { data: profile } = await supabase
-        .from('users')
-        .select('company_id')
-        .eq('id', user.id)
-        .single()
+      // Setup empresa + usuario via RPC (SECURITY DEFINER, bypasses RLS)
+      const { data: companyId, error: setupError } = await supabase
+        .rpc('setup_user_company', { user_email: user.email ?? '' })
 
-      // Si el usuario no tiene empresa, la creamos automáticamente
-      if (!profile?.company_id) {
-        const { data: company } = await supabase
-          .from('companies')
-          .insert({ name: user.email ?? 'Mi empresa' })
-          .select('id')
-          .single()
-
-        await supabase
-          .from('users')
-          .upsert({ id: user.id, email: user.email ?? '', company_id: company?.id })
-
-        profile = { company_id: company?.id }
+      if (setupError || !companyId) {
+        alert(`Error al configurar la empresa: ${setupError?.message}`)
+        return
       }
 
       const { data: chatbot, error } = await supabase
@@ -50,7 +38,7 @@ export default function NewChatbotPage() {
           name: name.trim(),
           model,
           description: welcome.trim() || null,
-          company_id: profile?.company_id,
+          company_id: companyId,
         })
         .select('id')
         .single()
