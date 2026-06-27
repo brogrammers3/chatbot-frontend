@@ -1,7 +1,50 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Link as LinkIcon } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 export default function NewChatbotPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [name, setName] = useState('')
+  const [model, setModel] = useState('gpt')
+  const [welcome, setWelcome] = useState('')
+  const [prompt, setPrompt] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) return
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('company_id')
+        .eq('id', user?.id)
+        .single()
+
+      const { data: chatbot } = await supabase
+        .from('chatbots')
+        .insert({
+          name: name.trim(),
+          model,
+          description: welcome.trim() || null,
+          company_id: profile?.company_id,
+        })
+        .select('id')
+        .single()
+
+      router.push(`/dashboard/chatbots/${chatbot?.id}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div style={{ maxWidth: 640 }}>
       <Link href="/dashboard/chatbots" className="back-link">
@@ -16,25 +59,30 @@ export default function NewChatbotPage() {
         </div>
       </header>
 
-      <div className="notice">
-        <LinkIcon />
-        <span>
-          <b>Formulario de muestra.</b> Al conectar el backend, esto creará un registro en{' '}
-          <code>chatbots</code>.
-        </span>
-      </div>
-
       <section className="panel">
-        <form>
+        <form onSubmit={handleSubmit}>
           <div className="ff">
             <label htmlFor="name">Nombre del chatbot</label>
-            <input className="ff__input" id="name" type="text" placeholder="Asistente de RRHH" />
+            <input
+              className="ff__input"
+              id="name"
+              type="text"
+              placeholder="Asistente de RRHH"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
           </div>
 
           <div className="ff">
             <label htmlFor="model">Modelo de IA</label>
-            <select className="ff__input" id="model" defaultValue="gpt">
-              <option value="gpt">GPT-5.4 mini — soporte general (Plan Base)</option>
+            <select
+              className="ff__input"
+              id="model"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+            >
+              <option value="gpt">GPT-4o mini — soporte general (Plan Base)</option>
               <option value="claude">Claude Sonnet 4.6 — documentos técnicos/legales (Plan Pro)</option>
             </select>
           </div>
@@ -46,6 +94,8 @@ export default function NewChatbotPage() {
               id="welcome"
               rows={2}
               placeholder="¡Hola! Soy el asistente de… ¿En qué puedo ayudarte?"
+              value={welcome}
+              onChange={(e) => setWelcome(e.target.value)}
             />
           </div>
 
@@ -56,6 +106,8 @@ export default function NewChatbotPage() {
               id="prompt"
               rows={4}
               placeholder="Responde con tono profesional usando solo la información de los documentos…"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
             />
           </div>
 
@@ -63,8 +115,12 @@ export default function NewChatbotPage() {
             <Link href="/dashboard/chatbots" className="btn btn--outline">
               Cancelar
             </Link>
-            <button type="button" className="btn btn--muted btn--lg" disabled title="Se habilitará al conectar el backend">
-              Crear chatbot
+            <button
+              type="submit"
+              className="btn btn--dark btn--lg"
+              disabled={loading || !name.trim()}
+            >
+              {loading ? 'Creando…' : 'Crear chatbot'}
             </button>
           </div>
         </form>
