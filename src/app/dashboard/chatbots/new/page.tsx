@@ -21,14 +21,30 @@ export default function NewChatbotPage() {
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from('users')
         .select('company_id')
-        .eq('id', user?.id)
+        .eq('id', user.id)
         .single()
 
-      const { data: chatbot } = await supabase
+      // Si el usuario no tiene empresa, la creamos automáticamente
+      if (!profile?.company_id) {
+        const { data: company } = await supabase
+          .from('companies')
+          .insert({ name: user.email ?? 'Mi empresa' })
+          .select('id')
+          .single()
+
+        await supabase
+          .from('users')
+          .upsert({ id: user.id, email: user.email ?? '', company_id: company?.id })
+
+        profile = { company_id: company?.id }
+      }
+
+      const { data: chatbot, error } = await supabase
         .from('chatbots')
         .insert({
           name: name.trim(),
@@ -39,7 +55,12 @@ export default function NewChatbotPage() {
         .select('id')
         .single()
 
-      router.push(`/dashboard/chatbots/${chatbot?.id}`)
+      if (error || !chatbot) {
+        alert(`Error al crear el chatbot: ${error?.message}`)
+        return
+      }
+
+      router.push(`/dashboard/chatbots/${chatbot.id}`)
     } finally {
       setLoading(false)
     }
