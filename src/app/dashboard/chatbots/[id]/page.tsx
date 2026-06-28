@@ -10,7 +10,7 @@ export default async function ChatbotDetailPage({ params }: { params: Promise<{ 
 
   const { data: chatbot } = await supabase
     .from('chatbots')
-    .select('id, name')
+    .select('id, name, model, description, system_prompt')
     .eq('id', id)
     .single()
 
@@ -42,7 +42,14 @@ export default async function ChatbotDetailPage({ params }: { params: Promise<{ 
         </a>
       </header>
 
-      <ChatbotTabs id={id} publicToken={publicToken} />
+      <ChatbotTabs
+        id={id}
+        publicToken={publicToken}
+        name={chatbot.name}
+        model={chatbot.model ?? 'gpt'}
+        description={chatbot.description ?? ''}
+        systemPrompt={chatbot.system_prompt ?? ''}
+      />
     </>
   )
 }

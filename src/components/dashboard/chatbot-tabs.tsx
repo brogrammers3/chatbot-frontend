@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { timeAgo, initials } from '@/lib/utils'
 import {
   Settings,
   FileText,
@@ -30,15 +32,43 @@ type TabKey = (typeof tabs)[number]['key']
 
 type Doc = { id: string; filename: string; status: 'pending' | 'processed' | 'error' }
 type Message = { role: 'user' | 'bot'; content: string }
+type Convo = { id: string; session_id: string; created_at: string; count: number; last: string }
 
-export function ChatbotTabs({ id, publicToken }: { id: string; publicToken: string }) {
+export function ChatbotTabs({
+  id,
+  publicToken,
+  name,
+  model,
+  description = '',
+  systemPrompt = '',
+}: {
+  id: string
+  publicToken: string
+  name: string
+  model: string
+  description?: string
+  systemPrompt?: string
+}) {
+  const router = useRouter()
   const [tab, setTab] = useState<TabKey>('config')
   const [copied, setCopied] = useState<string | null>(null)
+
+  // Config state
+  const [cfgName, setCfgName] = useState(name)
+  const [cfgModel, setCfgModel] = useState(model)
+  const [cfgWelcome, setCfgWelcome] = useState(description)
+  const [cfgPrompt, setCfgPrompt] = useState(systemPrompt)
+  const [savingCfg, setSavingCfg] = useState(false)
+  const [savedCfg, setSavedCfg] = useState(false)
 
   // Docs state
   const [docs, setDocs] = useState<Doc[]>([])
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Conversations state
+  const [convos, setConvos] = useState<Convo[]>([])
+  const [convosLoaded, setConvosLoaded] = useState(false)
 
   // Chat state
   const [messages, setMessages] = useState<Message[]>([])
@@ -49,11 +79,6 @@ export function ChatbotTabs({ id, publicToken }: { id: string; publicToken: stri
 
   const publicUrl = `https://smartsupport.app/chat/${publicToken}`
   const snippet = `<script src="https://smartsupport.app/widget.js" data-chatbot="${publicToken}" defer></script>`
-
-  useEffect(() => {
-    if (tab !== 'docs') return
-    loadDocs()
-  }, [tab, id])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -68,6 +93,69 @@ export function ChatbotTabs({ id, publicToken }: { id: string; publicToken: stri
       .order('created_at', { ascending: false })
     setDocs((data as Doc[]) ?? [])
   }
+
+  async function loadConvos() {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('conversations')
+      .select('id, session_id, created_at, messages(content, role, created_at)')
+      .eq('chatbot_id', id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    type Row = {
+      id: string
+      session_id: string
+      created_at: string
+      messages: { content: string; role: string; created_at: string }[]
+    }
+    const rows = ((data as Row[] | null) ?? []).map((c) => {
+      const sorted = [...c.messages].sort(
+        (a, b) => +new Date(a.created_at) - +new Date(b.created_at),
+      )
+      const lastUser = [...sorted].reverse().find((m) => m.role === 'user')
+      return {
+        id: c.id,
+        session_id: c.session_id,
+        created_at: c.created_at,
+        count: c.messages.length,
+        last: lastUser?.content ?? sorted[sorted.length - 1]?.content ?? 'Conversación sin mensajes',
+      }
+    })
+    setConvos(rows)
+    setConvosLoaded(true)
+  }
+
+  async function saveConfig() {
+    if (!cfgName.trim() || savingCfg) return
+    setSavingCfg(true)
+    setSavedCfg(false)
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('chatbots')
+      .update({
+        name: cfgName.trim(),
+        model: cfgModel,
+        description: cfgWelcome.trim() || null,
+        system_prompt: cfgPrompt.trim() || null,
+      })
+      .eq('id', id)
+    setSavingCfg(false)
+    if (error) {
+      alert(`No se pudo guardar: ${error.message}`)
+      return
+    }
+    setSavedCfg(true)
+    setTimeout(() => setSavedCfg(false), 2000)
+    router.refresh() // refresca el nombre en el encabezado (server component)
+  }
+
+  useEffect(() => {
+    // Carga diferida al abrir cada pestaña (los setState ocurren tras el await).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (tab === 'docs') loadDocs()
+    if (tab === 'convos') loadConvos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, id])
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -134,14 +222,24 @@ export function ChatbotTabs({ id, publicToken }: { id: string; publicToken: stri
 
       {tab === 'config' && (
         <section className="panel">
-          <form>
+          <form onSubmit={(e) => { e.preventDefault(); saveConfig() }}>
             <div className="ff">
               <label htmlFor="c-name">Nombre</label>
-              <input className="ff__input" id="c-name" defaultValue="Asistente de RRHH" />
+              <input
+                className="ff__input"
+                id="c-name"
+                value={cfgName}
+                onChange={(e) => setCfgName(e.target.value)}
+              />
             </div>
             <div className="ff">
               <label htmlFor="c-model">Modelo de IA</label>
-              <select className="ff__input" id="c-model" defaultValue="claude">
+              <select
+                className="ff__input"
+                id="c-model"
+                value={cfgModel}
+                onChange={(e) => setCfgModel(e.target.value)}
+              >
                 <option value="gpt">GPT-4o mini (Plan Base)</option>
                 <option value="claude">Claude Sonnet 4.6 (Plan Pro)</option>
               </select>
@@ -152,7 +250,9 @@ export function ChatbotTabs({ id, publicToken }: { id: string; publicToken: stri
                 className="ff__input"
                 id="c-welcome"
                 rows={2}
-                defaultValue="¡Hola! Soy el asistente de RRHH. ¿En qué puedo ayudarte?"
+                placeholder="¡Hola! ¿En qué puedo ayudarte?"
+                value={cfgWelcome}
+                onChange={(e) => setCfgWelcome(e.target.value)}
               />
             </div>
             <div className="ff">
@@ -161,12 +261,27 @@ export function ChatbotTabs({ id, publicToken }: { id: string; publicToken: stri
                 className="ff__input"
                 id="c-prompt"
                 rows={4}
-                defaultValue="Responde con tono profesional usando solo la información de los documentos cargados. Si algo no está en los documentos, indícalo."
+                placeholder="Responde con tono profesional usando solo la información de los documentos cargados. Si algo no está en los documentos, indícalo."
+                value={cfgPrompt}
+                onChange={(e) => setCfgPrompt(e.target.value)}
               />
+              <span className="ff__hint">Define el tono y la personalidad del asistente.</span>
             </div>
-            <button type="button" className="btn btn--muted btn--lg" disabled>
-              Guardar cambios
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button
+                type="submit"
+                className="btn btn--dark btn--lg"
+                disabled={savingCfg || !cfgName.trim()}
+              >
+                {savingCfg ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+              {savedCfg && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--green-600, #15803d)', fontSize: 14 }}>
+                  <Check style={{ width: 16, height: 16 }} />
+                  Guardado
+                </span>
+              )}
+            </div>
           </form>
         </section>
       )}
@@ -317,13 +432,34 @@ export function ChatbotTabs({ id, publicToken }: { id: string; publicToken: stri
       )}
 
       {tab === 'convos' && (
-        <div className="empty">
-          <span className="empty__icon" aria-hidden="true">
-            <Inbox />
-          </span>
-          <h2>Sin conversaciones todavía</h2>
-          <p>Cuando tus usuarios hablen con este chatbot, las sesiones aparecerán aquí.</p>
-        </div>
+        convos.length > 0 ? (
+          <section className="panel" style={{ padding: 0 }}>
+            <div className="member-list">
+              {convos.map((c) => (
+                <div className="member" key={c.id}>
+                  <span className="conv__ava" aria-hidden="true">
+                    {initials(c.session_id)}
+                  </span>
+                  <span className="member__meta">
+                    <span className="n">{c.last}</span>
+                    <span className="c">
+                      Sesión {c.session_id.slice(0, 8)} · {c.count} mensaje{c.count === 1 ? '' : 's'}
+                    </span>
+                  </span>
+                  <span className="conv__time">{timeAgo(c.created_at)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : (
+          <div className="empty">
+            <span className="empty__icon" aria-hidden="true">
+              {convosLoaded ? <Inbox /> : <Loader2 className="animate-spin" />}
+            </span>
+            <h2>{convosLoaded ? 'Sin conversaciones todavía' : 'Cargando…'}</h2>
+            <p>Cuando tus usuarios hablen con este chatbot, las sesiones aparecerán aquí.</p>
+          </div>
+        )
       )}
     </div>
   )

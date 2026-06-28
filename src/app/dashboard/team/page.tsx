@@ -1,19 +1,34 @@
-import { Link as LinkIcon, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { initials } from '@/lib/utils'
+
+type Member = {
+  id: string
+  full_name: string | null
+  email: string
+  role: 'admin' | 'member'
+}
+
+const ROLE_LABEL: Record<Member['role'], { label: string; cls: string }> = {
+  admin: { label: 'Administrador', cls: 'open' },
+  member: { label: 'Miembro', cls: 'draft' },
+}
 
 export default async function TeamPage() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const myName = (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? 'Tú'
-  const myEmail = user?.email ?? ''
 
-  const members = [
-    { name: myName, email: myEmail, role: 'Propietario', status: 'live' as const, you: true },
-    { name: 'María González', email: 'maria@empresa.com', role: 'Administrador', status: 'open' as const, you: false },
-    { name: 'Carlos Ruiz', email: 'carlos@empresa.com', role: 'Miembro', status: 'draft' as const, you: false },
-  ]
+  // RLS limita `users` a los miembros de la misma empresa.
+  const { data } = await supabase
+    .from('users')
+    .select('id, full_name, email, role')
+    .order('created_at', { ascending: true })
+
+  const members = (data as Member[] | null) ?? []
+  // El usuario actual va primero.
+  members.sort((a, b) => (a.id === user?.id ? -1 : b.id === user?.id ? 1 : 0))
 
   return (
     <>
@@ -22,38 +37,35 @@ export default async function TeamPage() {
           <h1>Equipo</h1>
           <p>Gestiona quién tiene acceso a tu empresa en SmartSupport.</p>
         </div>
-        <button type="button" className="btn btn--dark btn--lg" disabled title="Se habilitará al conectar el backend">
+        <button type="button" className="btn btn--dark btn--lg" disabled title="Las invitaciones llegarán en un Sprint futuro">
           <UserPlus />
           Invitar miembro
         </button>
       </header>
 
-      <div className="notice">
-        <LinkIcon />
-        <span>
-          <b>Datos de ejemplo</b> (excepto tu usuario). Los miembros se leerán de <code>users</code>{' '}
-          filtrados por <code>company_id</code>.
-        </span>
-      </div>
-
       <section className="member-list" aria-label="Miembros del equipo">
-        {members.map((m, i) => (
-          <div className="member" key={i}>
-            <span className="conv__ava" aria-hidden="true">
-              {(m.name || '??').slice(0, 2).toUpperCase()}
-            </span>
-            <span className="member__meta">
-              <span className="n">
-                {m.name} {m.you && <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(tú)</span>}
+        {members.map((m) => {
+          const name = m.full_name || m.email
+          const role = ROLE_LABEL[m.role] ?? ROLE_LABEL.member
+          const you = m.id === user?.id
+          return (
+            <div className="member" key={m.id}>
+              <span className="conv__ava" aria-hidden="true">
+                {initials(name)}
               </span>
-              <span className="c">{m.email}</span>
-            </span>
-            <span className={`badge badge--${m.status}`}>
-              <span className="dot" />
-              {m.role}
-            </span>
-          </div>
-        ))}
+              <span className="member__meta">
+                <span className="n">
+                  {name} {you && <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(tú)</span>}
+                </span>
+                <span className="c">{m.email}</span>
+              </span>
+              <span className={`badge badge--${role.cls}`}>
+                <span className="dot" />
+                {role.label}
+              </span>
+            </div>
+          )
+        })}
       </section>
     </>
   )

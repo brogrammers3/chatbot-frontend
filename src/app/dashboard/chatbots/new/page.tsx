@@ -38,6 +38,7 @@ export default function NewChatbotPage() {
           name: name.trim(),
           model,
           description: welcome.trim() || null,
+          system_prompt: prompt.trim() || null,
           company_id: companyId,
         })
         .select('id')
