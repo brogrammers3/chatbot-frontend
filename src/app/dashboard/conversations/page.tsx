@@ -1,27 +1,51 @@
-import { Link as LinkIcon, Search, Bot } from 'lucide-react'
+import { Search, Bot, Inbox } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import { timeAgo, initials } from '@/lib/utils'
 
-type Status = 'live' | 'open' | 'warn'
+type ConversationRow = {
+  id: string
+  session_id: string
+  created_at: string
+  chatbots: { name: string } | null
+  messages: { content: string; role: string; created_at: string }[]
+}
 
-const rows: {
-  initials: string
-  name: string
-  contact: string
-  msg: string
-  bot: string
-  status: Status
-  statusLabel: string
-  time: string
-}[] = [
-  { initials: 'MR', name: 'María Robles', contact: 'maria.robles@correo.com', msg: '¿Cómo solicito vacaciones desde la plataforma de RRHH?', bot: 'Asistente de RRHH', status: 'live', statusLabel: 'Resuelta', time: 'hace 4 min' },
-  { initials: 'JC', name: 'Javier Cano', contact: 'j.cano@empresa.mx', msg: 'El producto no sincroniza con mi cuenta, ¿hay algún error conocido?', bot: 'Soporte de Producto', status: 'open', statusLabel: 'Abierta', time: 'hace 18 min' },
-  { initials: 'AL', name: 'Ana López', contact: 'ana.lopez@correo.com', msg: 'Necesito hablar con un agente humano sobre un reembolso urgente.', bot: 'Soporte de Producto', status: 'warn', statusLabel: 'Escalada', time: 'hace 1 h' },
-  { initials: 'DT', name: 'Diego Torres', contact: 'diego.torres@correo.com', msg: '¿Cuál es el horario de atención y qué planes incluyen soporte premium?', bot: 'Soporte de Producto', status: 'live', statusLabel: 'Resuelta', time: 'hace 3 h' },
-  { initials: 'PG', name: 'Paola Guzmán', contact: 'paola.g@empresa.mx', msg: '¿Puedo descargar mi recibo de nómina del mes pasado?', bot: 'Asistente de RRHH', status: 'live', statusLabel: 'Resuelta', time: 'ayer' },
-]
+export default async function ConversationsPage() {
+  const supabase = await createClient()
 
-const filters = ['Todas', 'Abiertas', 'Resueltas', 'Escaladas']
+  // RLS limita las conversaciones a los chatbots de la empresa del usuario.
+  const { data } = await supabase
+    .from('conversations')
+    .select('id, session_id, created_at, chatbots(name), messages(content, role, created_at)')
+    .order('created_at', { ascending: false })
+    .limit(100)
 
-export default function ConversationsPage() {
+  const conversations = ((data as ConversationRow[] | null) ?? []).map((c) => {
+    const sorted = [...c.messages].sort(
+      (a, b) => +new Date(a.created_at) - +new Date(b.created_at),
+    )
+    const last = sorted[sorted.length - 1]
+    const lastUser = [...sorted].reverse().find((m) => m.role === 'user')
+
+    // Estado derivado del último mensaje: si el bot ya respondió la cerramos.
+    const status =
+      sorted.length === 0
+        ? { cls: 'draft', label: 'Vacía' }
+        : last.role === 'assistant'
+          ? { cls: 'live', label: 'Respondida' }
+          : { cls: 'warn', label: 'Pendiente' }
+
+    return {
+      id: c.id,
+      session: c.session_id,
+      bot: c.chatbots?.name ?? 'Chatbot',
+      msg: lastUser?.content ?? last?.content ?? 'Conversación sin mensajes',
+      count: c.messages.length,
+      status,
+      time: c.created_at,
+    }
+  })
+
   return (
     <>
       <header className="page-head">
@@ -31,53 +55,48 @@ export default function ConversationsPage() {
         </div>
       </header>
 
-      <div className="notice">
-        <LinkIcon />
-        <span>
-          <b>Datos de ejemplo.</b> Las conversaciones reales se cargarán desde la tabla{' '}
-          <code>messages</code> (filtrada por empresa vía RLS).
-        </span>
-      </div>
-
       <div className="toolbar">
         <label className="search">
           <Search />
-          <input type="search" placeholder="Buscar por usuario o mensaje…" aria-label="Buscar conversaciones" />
+          <input type="search" placeholder="Buscar por sesión o mensaje…" aria-label="Buscar conversaciones" />
         </label>
-        <div className="segmented" role="group" aria-label="Filtrar por estado">
-          {filters.map((f, i) => (
-            <button type="button" key={f} className={i === 0 ? 'is-active' : undefined}>
-              {f}
-            </button>
-          ))}
-        </div>
       </div>
 
-      <section className="conv-list" aria-label="Lista de conversaciones">
-        {rows.map((r, i) => (
-          <div className="conv" key={i}>
-            <div className="conv__user">
-              <span className="conv__ava" aria-hidden="true">
-                {r.initials}
+      {conversations.length === 0 ? (
+        <div className="empty">
+          <span className="empty__icon" aria-hidden="true">
+            <Inbox />
+          </span>
+          <h2>Sin conversaciones todavía</h2>
+          <p>Cuando tus usuarios hablen con tus chatbots, las sesiones aparecerán aquí.</p>
+        </div>
+      ) : (
+        <section className="conv-list" aria-label="Lista de conversaciones">
+          {conversations.map((c) => (
+            <div className="conv" key={c.id}>
+              <div className="conv__user">
+                <span className="conv__ava" aria-hidden="true">
+                  {initials(c.session)}
+                </span>
+                <span className="conv__who">
+                  <span className="n">Sesión {c.session.slice(0, 8)}</span>
+                  <span className="c">{c.count} mensaje{c.count === 1 ? '' : 's'}</span>
+                </span>
+              </div>
+              <div className="conv__msg">{c.msg}</div>
+              <span className="conv__bot">
+                <Bot />
+                {c.bot}
               </span>
-              <span className="conv__who">
-                <span className="n">{r.name}</span>
-                <span className="c">{r.contact}</span>
+              <span className={`badge badge--${c.status.cls}`}>
+                <span className="dot" />
+                {c.status.label}
               </span>
+              <span className="conv__time">{timeAgo(c.time)}</span>
             </div>
-            <div className="conv__msg">{r.msg}</div>
-            <span className="conv__bot">
-              <Bot />
-              {r.bot}
-            </span>
-            <span className={`badge badge--${r.status}`}>
-              <span className="dot" />
-              {r.statusLabel}
-            </span>
-            <span className="conv__time">{r.time}</span>
-          </div>
-        ))}
-      </section>
+          ))}
+        </section>
+      )}
     </>
   )
 }

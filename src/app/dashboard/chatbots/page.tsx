@@ -7,7 +7,7 @@ export default async function ChatbotsPage() {
 
   const { data: chatbots } = await supabase
     .from('chatbots')
-    .select('id, name, model, created_at')
+    .select('id, name, model, created_at, conversations(count)')
     .order('created_at', { ascending: false })
 
   return (
@@ -57,7 +57,7 @@ export default async function ChatbotsPage() {
                 <div className="bot__meta">
                   <span>
                     <MessagesSquare />
-                    0 chats
+                    {bot.conversations?.[0]?.count ?? 0} chats
                   </span>
                 </div>
               </div>

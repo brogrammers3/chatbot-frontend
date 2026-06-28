@@ -1,6 +1,17 @@
-import { Link as LinkIcon, Building2, CreditCard } from 'lucide-react'
+import { Building2, CreditCard } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import { CompanySettingsForm } from '@/components/dashboard/company-settings-form'
 
-export default function SettingsPage() {
+type Company = { id: string; name: string; plan: 'free' | 'pro' }
+
+export default async function SettingsPage() {
+  const supabase = await createClient()
+
+  // RLS limita `companies` a la empresa del usuario, así que hay una sola fila.
+  const { data } = await supabase.from('companies').select('id, name, plan').limit(1).single()
+  const company = (data as Company | null) ?? null
+  const isPro = company?.plan === 'pro'
+
   return (
     <>
       <header className="page-head">
@@ -9,13 +20,6 @@ export default function SettingsPage() {
           <p>Ajustes de tu empresa y plan.</p>
         </div>
       </header>
-
-      <div className="notice">
-        <LinkIcon />
-        <span>
-          <b>Vista preliminar.</b> El perfil se guardará en la tabla <code>companies</code>.
-        </span>
-      </div>
 
       <div className="panels">
         {/* Perfil de empresa */}
@@ -26,33 +30,15 @@ export default function SettingsPage() {
             </span>
             <div>
               <h2>Perfil de empresa</h2>
-              <p>Nombre y URL pública de tu organización.</p>
+              <p>Nombre de tu organización.</p>
             </div>
           </div>
 
-          <form>
-            <div className="ff">
-              <label htmlFor="companyName">Nombre de la empresa</label>
-              <input className="ff__input" id="companyName" type="text" defaultValue="Acme Corp" />
-            </div>
-
-            <div className="ff">
-              <label htmlFor="slug">URL (slug)</label>
-              <div className="ff__slug">
-                <span className="prefix">smartsupport.app/</span>
-                <input className="ff__input" id="slug" type="text" defaultValue="acme" />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="btn btn--muted btn--lg"
-              disabled
-              title="Se habilitará al conectar el backend"
-            >
-              Guardar cambios
-            </button>
-          </form>
+          {company ? (
+            <CompanySettingsForm companyId={company.id} initialName={company.name} />
+          ) : (
+            <p className="panel__foot">No se encontró la empresa asociada a tu cuenta.</p>
+          )}
         </section>
 
         {/* Plan y facturación */}
@@ -70,10 +56,14 @@ export default function SettingsPage() {
           <div className="plan-row">
             <div>
               <div className="plan-row__name">
-                <b>Plan Base</b>
+                <b>{isPro ? 'Plan Pro' : 'Plan Base'}</b>
                 <span className="badge--soft">Actual</span>
               </div>
-              <p className="plan-row__desc">GPT-5.4 mini · soporte general de alto volumen.</p>
+              <p className="plan-row__desc">
+                {isPro
+                  ? 'Claude Sonnet 4.6 · respuestas de mayor calidad.'
+                  : 'GPT-4o mini · soporte general de alto volumen.'}
+              </p>
             </div>
             <button
               type="button"
@@ -81,7 +71,7 @@ export default function SettingsPage() {
               disabled
               title="La facturación llegará en un Sprint futuro"
             >
-              Cambiar a Pro
+              {isPro ? 'Gestionar plan' : 'Cambiar a Pro'}
             </button>
           </div>
 

@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { Link as LinkIcon, Key } from 'lucide-react'
+import { Key } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { AccountProfileForm } from '@/components/dashboard/account-profile-form'
 
 export default async function AccountPage() {
   const supabase = await createClient()
@@ -19,14 +20,6 @@ export default async function AccountPage() {
         </div>
       </header>
 
-      <div className="notice">
-        <LinkIcon />
-        <span>
-          El correo proviene de tu sesión real de Supabase. <b>Guardar cambios</b> se habilitará al
-          conectar el backend.
-        </span>
-      </div>
-
       <div className="panels">
         {/* Perfil */}
         <section className="panel">
@@ -37,33 +30,7 @@ export default async function AccountPage() {
             </div>
           </div>
 
-          <form>
-            <div className="ff">
-              <label htmlFor="fullName">Nombre completo</label>
-              <input
-                className="ff__input"
-                id="fullName"
-                type="text"
-                defaultValue={fullName}
-                placeholder="Tu nombre"
-              />
-            </div>
-
-            <div className="ff">
-              <label htmlFor="email">Correo electrónico</label>
-              <input className="ff__input" id="email" type="email" defaultValue={email} readOnly />
-              <span className="ff__hint">El correo no se puede cambiar por ahora.</span>
-            </div>
-
-            <button
-              type="button"
-              className="btn btn--muted btn--lg"
-              disabled
-              title="Se habilitará al conectar el backend"
-            >
-              Guardar cambios
-            </button>
-          </form>
+          <AccountProfileForm userId={user?.id ?? ''} initialName={fullName} email={email} />
         </section>
 
         {/* Seguridad */}
